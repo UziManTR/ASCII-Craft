@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASCII-Craft | Block PvP</title>
+<style>
+:root{--bg:#101510;--panel:#1a241c;--line:#405742;--green:#8df58c;--gold:#f5d76e;--red:#ff7777}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#263a29,#0b100d 65%);color:#e8f1e8;font:15px ui-monospace,SFMono-Regular,Consolas,monospace;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:#101711dd;flex-wrap:wrap}
+h1{font-size:20px;margin:0;color:var(--green);letter-spacing:2px}small,.muted{color:#a8b8a7}.wrap{max-width:1200px;margin:18px auto;padding:0 14px;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px}
+.panel{background:#18211aeF;border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:0 10px 30px #0005}.gamebox{position:relative;padding:0;overflow:hidden}canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;image-rendering:pixelated;background:#202d21;cursor:crosshair}
+.hud{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 13px;border-bottom:1px solid var(--line)}.stat{color:var(--green)}.bar{height:8px;background:#303c31;border-radius:9px;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:var(--green);width:100%;transition:width .15s}
+button,input{font:inherit;border-radius:6px;border:1px solid #557255;background:#111a13;color:#e8f1e8;padding:9px 11px}button{cursor:pointer}button:hover{border-color:var(--green);color:var(--green)}button.primary{background:#244b2b;border-color:#6dbb70;color:#caffca}.controls{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.side h2{font-size:14px;color:var(--gold);margin:0 0 10px}.side p{line-height:1.5;color:#b7c8b7}.log{height:105px;overflow:auto;font-size:12px;color:#b7c8b7;line-height:1.5}.pill{display:inline-block;border:1px solid #4e6a4e;padding:4px 7px;border-radius:5px;margin:2px;font-size:12px}
+.overlay{position:absolute;inset:0;background:#09100de8;display:flex;align-items:center;justify-content:center;padding:15px;z-index:3}.modal{max-width:560px;width:100%;border:1px solid #658d60;border-radius:12px;background:#18231b;padding:22px;box-shadow:0 18px 55px #0009}.modal h2{margin-top:0;color:var(--gold)}.answers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}.answers button{text-align:left;min-height:45px}.hidden{display:none!important}.field{display:flex;gap:6px;margin:7px 0}.field input{min-width:0;width:100%}.footer{text-align:center;padding:0 14px 20px;color:#829382;font-size:12px}
+@media(max-width:850px){.wrap{grid-template-columns:1fr}.sidegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.sidegrid .panel{min-width:0}}@media(max-width:520px){header{padding:12px}.wrap{margin:10px auto;padding:0 8px}.panel{padding:10px}.sidegrid{grid-template-columns:1fr}.answers{grid-template-columns:1fr 1fr}h1{font-size:16px}}
+</style>
+</head>
+<body>
+<header><div><h1>ASCII-CRAFT <span style="color:#f5d76e">/ PVP</span></h1><small>BLOCK ARENA • SURVIVE • UPGRADE</small></div><div><span class="pill">v0.1</span><span class="pill">WASD + MOUSE</span></div></header>
+<div class="wrap">
+<main>
+<section class="panel gamebox">
+<div class="hud"><span>HP <b id="hpText" class="stat">100 / 100</b><div class="bar" style="width:130px"><i id="hpBar"></i></div></span><span>KILLS <b id="kills" class="stat">0</b></span><span>LEVEL <b id="level" class="stat">1</b></span><span>WEAPON <b id="weapon" class="stat">WOOD</b></span></div>
+<canvas id="game" width="960" height="600" aria-label="ASCII Craft oyun alanı"></canvas>
+<div id="overlay" class="overlay"><div class="modal"><h2>▣ ASCII-CRAFT</h2><p>Bloklardan oluşan arenaya gir. Botları yen, her skor sonrası bilişim sorusunu cevapla ve güçlen.</p><p class="muted">WASD hareket · Fare nişan · Sol tık saldır · Space hızlı atak</p><div class="controls"><button class="primary" id="start">OYUNA BAŞLA</button><button id="reset">YENİ DÜNYA</button></div><p class="muted">Tek oyunculu prototip. Çok oyunculu alanı bağlantı kodlarıyla açabilirsin.</p></div></div>
+<div id="quizOverlay" class="overlay hidden"><div class="modal"><small>LEVEL UP / KNOWLEDGE CHECK</small><h2 id="question">Soru</h2><div id="answers" class="answers"></div><p id="feedback" class="muted"></p></div></div>
+</section>
+<div class="controls"><button id="pause">DURAKLAT</button><button id="heal">İKSİR (H)</button><button id="newWorld">YENİ DÜNYA</button><span class="muted" id="status" style="align-self:center">Hazır</span></div>
+</main>
+<aside class="sidegrid">
+<section class="panel side"><h2>▣ KARAKTER</h2><p>Takma ad</p><input id="nickname" maxlength="16" value="Steve" style="width:100%"><p>Geliştirmeler</p><div id="upgrades"><span class="pill">Hasar +0</span><span class="pill">Hız +0</span></div><p>Envanter: <b id="potions">2</b> iksir</p></section>
+<section class="panel side"><h2>▣ MULTIPLAYER (BETA)</h2><p>Host açar, arkadaşın oda koduna bağlanır. İnternet bağlantısı ve PeerJS servisi gerekir.</p><button id="host" class="primary" style="width:100%">ODA OLUŞTUR</button><div class="field"><input id="roomCode" placeholder="Arkadaşın kodu"><button id="join">KATIL</button></div><p id="netStatus" class="muted">Çevrimdışı</p><p class="muted">Bu prototipte çevrimiçi eşleşme deneyseldir.</p></section>
+<section class="panel side"><h2>▣ KONTROLLER</h2><p><span class="pill">W A S D</span> Hareket</p><p><span class="pill">SOL TIK</span> Saldır</p><p><span class="pill">H</span> İksir</p><p><span class="pill">SPACE</span> Hızlı atak</p></section>
+<section class="panel side"><h2>▣ OLAY GÜNLÜĞÜ</h2><div class="log" id="log">[SYSTEM] Dünya yüklendi.<br>[INFO] Botlar arenada doğdu.</div></section>
+</aside>
+</div>
+<div class="footer">ASCII-Craft fan-made browser prototype. Minecraft is a trademark of Mojang Studios. Not affiliated with Mojang or Microsoft.</div>
+<script>
+(function(){
+'use strict';
+var canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+var keys={},mouse={x:W/2,y:H/2,down:false},player,bots=[],blocks=[],particles=[],running=false,paused=false,quizOpen=false,kills=0,level=1,damage=0,speedBonus=0,potions=2,weapon=0,lastShot=0,lastTick=0,peer=null,conn=null,isHost=false,remoteState=null;
+var weaponNames=['WOOD','STONE','IRON','DIAMOND','NETHERITE'];
+var questions=[
+['Excel’de formül hangi işaretle başlar?',['=','+','@','#'],0],
+['Excel’de sütunlar genellikle nasıl adlandırılır?',['Rakamlarla','Harflerle','Renklerle','Roma rakamlarıyla'],1],
+['Excel’de hücre adresi hangisidir?',['A1','1A1','AA-','RowA'],0],
+['Toplam almak için kullanılan yaygın fonksiyon hangisidir?',['COUNT','SUM','JOIN','PRINT'],1],
+['Excel’de satır ve sütunun kesişimi nedir?',['Sayfa','Hücre','Dosya','Grafik'],1],
+['Scratch’te karaktere ne ad verilir?',['Sprite','Sheet','Layer','Cell'],0],
+['Scratch’te kod blokları nasıl birleştirilir?',['Yazarak','Sürükleyip takarak','Sesle','Formülle'],1],
+['Scratch’te olay başlatan blok kategorisi hangisidir?',['Olaylar','Görünüm','Kalem','Değişkenler'],0],
+['Bir değişken ne için kullanılır?',['Değer saklamak','Ekranı temizlemek','İnterneti açmak','Dosyayı yazdırmak'],0],
+['HTML ne için kullanılır?',['Web sayfasının yapısı','Video kartı sürücüsü','Veritabanı yedeği','İşletim sistemi'],0],
+['CSS neyi biçimlendirir?',['Web sayfasının görünümünü','Wi-Fi şifresini','RAM miktarını','Dosya uzantısını'],0],
+['JavaScript genellikle ne ekler?',['Etkileşim ve davranış','Fiziksel bellek','Monitör çözünürlüğü','Elektrik gücü'],0],
+['URL neyi belirtir?',['İnternet adresini','Ekran kartını','Dosya boyutunu','Klavye türünü'],0],
+['Güçlü parola için en iyi tercih hangisi?',['123456','Adın ve doğum yılın','Uzun ve benzersiz parola','Herkesle aynı parola'],2],
+['İki aşamalı doğrulama ne sağlar?',['Ek hesap güvenliği','Daha hızlı internet','Daha büyük ekran','Ücretsiz depolama'],0],
+['Şüpheli e-postadaki bağlantıya ne yapmalı?',['Hemen tıkla','Göndereni doğrula','Şifreyi yaz','Herkese ilet'],1],
+['Scratch’te döngü ne işe yarar?',['Komutları tekrarlamak','Bilgisayarı kapatmak','Resim yazdırmak','Ses kartı açmak'],0],
+['Excel’de grafik ne işe yarar?',['Veriyi görselleştirmek','Hücreleri şifrelemek','Dosyayı sıkıştırmak','Formülü silmek'],0],
+['Excel’de A1:B4 aralığı neyi ifade eder?',['Tek hücreyi','A1 ile B4 arasındaki hücreleri','İki dosyayı','İki grafiği'],1],
+['Dosya uzantısı .xlsx hangi uygulamayla ilişkilidir?',['Excel','Scratch','Paint','Not Defteri'],0],
+['Scratch’te koşul bloğu ne yapar?',['Bir koşula göre karar verir','Ekranı büyütür','İnterneti keser','Dosya taşır'],0],
+['RAM’in temel görevi nedir?',['Geçici çalışma verilerini tutmak','Kalıcı baskı yapmak','İnternet dağıtmak','Ses kaydetmek'],0],
+['CPU ne olarak bilinir?',['İşlemci','Monitör','Klavye','Hoparlör'],0],
+['GPU en çok hangi işlemlerle ilişkilidir?',['Grafik işlemleri','Metin düzeltme','Parola saklama','Dosya adlandırma'],0],
+['İşletim sistemine örnek hangisidir?',['Windows','HDMI','USB','HTML'],0],
+['Bir web tarayıcısı hangisidir?',['Firefox','Excel hücresi','RAM','Bluetooth'],0],
+['Phishing (oltalama) nedir?',['Bilgileri kandırarak ele geçirme girişimi','Dosya yedekleme','Ekran görüntüsü','Program güncellemesi'],0],
+['İnternette kişisel bilgileri paylaşırken ne yapılmalı?',['Her yerde paylaş','Gizlilik ve güvenliği düşün','Parolayı gönder','Konumu herkese aç'],1],
+['Scratch’te koordinat düzleminde x ekseni neyi değiştirir?',['Sağ-sol konumu','Yukarı-aşağı konumu','Sesi','Boyutu'],0],
+['Scratch’te y ekseni neyi değiştirir?',['Sağ-sol konumu','Yukarı-aşağı konumu','Kostümü','Ses seviyesini'],1],
+['Excel’de sıralama aracı ne yapar?',['Verileri düzene göre dizer','Dosyayı siler','Yeni klavye kurar','Hücreye resim çizer'],0],
+['Excel’de filtre ne işe yarar?',['Belirli koşullara uyan verileri gösterir','Tüm veriyi rastgele siler','Ekranı kapatır','Parola üretir'],0],
+['Yazılım güncellemeleri neden önemlidir?',['Hata ve güvenlik açıklarını düzeltebilir','Her zaman dosyaları siler','Ekranı küçültür','İnterneti kapatır'],0],
+['Yedekleme ne sağlar?',['Veri kaybına karşı kopya','Daha fazla klavye tuşu','Ekran parlaklığı','Daha kısa parola'],0],
+['Scratch’te kostüm neyi değiştirir?',['Karakterin görünüşünü','Değişken değerini zorunlu olarak','İnternet hızını','Dosya uzantısını'],0],
+['Algoritma nedir?',['Bir işi çözmek için adım adım yönerge','Bilgisayar kasası','Resim dosyası','Wi-Fi ağı'],0],
+['Bir hata ayıklama (debugging) işlemi nedir?',['Hataları bulup düzeltmek','Ekranı kirletmek','Dosyayı paylaşmak','Bilgisayarı taşımak'],0],
+['Açık kaynak yazılım ne demektir?',['Kaynak kodu incelenip lisansına göre değiştirilebilir','Her zaman virüslüdür','Sadece çevrimdışı çalışır','Sadece ücretlidir'],0],
+['Bulut depolama ne sağlar?',['Dosyalara internet üzerinden erişim','Ekran kartı soğutma','Klavye temizliği','Pil üretimi'],0],
+['İnternette gördüğün her bilgi için en doğru yaklaşım nedir?',['Kaynağı kontrol etmek','Hemen doğru kabul etmek','Kaynağı gizlemek','Herkese şifre vermek'],0],
+['Scratch’te mesaj yayınlama ne işe yarar?',['Farklı kod parçalarını olayla haberleştirmek','Monitörü kapatmak','Değişkenleri yok etmek','İnternet hızlandırmak'],0],
+['Excel’de =AVERAGE(A1:A5) ne hesaplar?',['Ortalama','En büyük değer','Hücre sayısı','Metin uzunluğu'],0],
+['Excel’de =MAX(A1:A5) ne bulur?',['En küçük değer','En büyük değer','Ortalama','Toplam metin'],1],
+['Excel’de =MIN(A1:A5) ne bulur?',['En küçük değer','En büyük değer','Toplam','Tarih'],0],
+['Bilgisayar dosyalarını düzenlemenin iyi yolu nedir?',['Anlamlı klasör ve isimler kullanmak','Hepsine aynı isim vermek','Her şeyi silmek','Uzantıları rastgele değiştirmek'],0],
+['İnternet bağlantısını şifreleyen HTTPS neye yardımcı olur?',['Tarayıcı ile site arasındaki iletişimi korumaya','Bilgisayarı hızlandırmaya kesin olarak','Pil şarj etmeye','Dosyaları yazdırmaya'],0],
+['Scratch’te klonlar ne işe yarar?',['Bir kuklanın kopyalarını oluşturmak','Projenin şifresini değiştirmek','Sesi kapatmak','Yeni hesap açmak'],0],
+['Bir e-tabloda mutlak hücre başvurusu örneği hangisidir?',['$A$1','A1:','#A#1','A-1'],0],
+['Veri gizliliği ne anlama gelir?',['Kişisel bilgilerin nasıl kullanıldığını kontrol etmek','Tüm bilgileri herkese açmak','Ekranı karartmak','Dosyayı büyütmek'],0],
+['İndirdiğin dosya güven vermiyorsa ne yapmalısın?',['Açmadan kaynağı kontrol et','Hemen çalıştır','Antivirüsü kapat','Arkadaşlara gönder'],0],
+['Bir web sayfasının mobil uyumlu olması ne demektir?',['Farklı ekran boyutlarına uyum sağlaması','Sadece bilgisayarda açılması','Telefonu şarj etmesi','Her zaman çevrimdışı olması'],0],
+['Scratch’te “eğer ... ise” bloğu hangi yapıdır?',['Koşul','Döngü zorunlu','Dosya','Ses efekti'],0],
+['Excel’de birden çok sayfa ne sağlar?',['Aynı çalışma kitabında verileri ayırmayı','İnterneti hızlandırmayı','Dosyayı otomatik silmeyi','Bilgisayarı kapatmayı'],0],
+['Kimlik avına karşı ne yapılmalı?',['Adresleri ve gönderenleri dikkatle kontrol etmek','Her linke tıklamak','Parolayı sohbete yazmak','Uyarıları kapatmak'],0],
+['Bir programın test edilmesi neden önemlidir?',['Hataları ve beklenmeyen davranışları bulmak','Dosya rengini değiştirmek','RAM’i fiziksel büyütmek','İnterneti kapatmak'],0],
+['Scratch’te sahne neyi temsil eder?',['Projenin arka plan ve oyun alanını','Dosya yöneticisini','Parola ekranını','İşlemciyi'],0],
+['Excel’de koşullu biçimlendirme ne yapar?',['Kurala göre hücre görünümünü değiştirir','Tüm hücreleri kilitler','Bilgisayarı yeniden başlatır','İnterneti keser'],0],
+['Bilgisayarda güçlü güvenlik için hangisi uygundur?',['Güncelleme, güvenilir yazılım ve güçlü parola','Her dosyayı yönetici olarak açmak','Güvenlik uyarılarını yok saymak','Parolayı herkese vermek'],0],
+['Bir piksel nedir?',['Dijital görüntünün küçük noktası','Bir tür parola','İnternet kablosu','Excel formülü'],0],
+['Veri türü “boolean” hangi değerleri alır?',['Doğru/yanlış','Sadece fotoğraf','Sadece tarih','Sadece video'],0],
+['Bir değişkenin değeri neden değişebilir?',['Program çalışırken yeni değer atanabilir','Ekran çözünürlüğü yüzünden daima','Dosya adı yüzünden asla','Yalnızca internette'],0],
+['Web’de erişilebilirlik neyi amaçlar?',['İçeriği daha fazla kişinin kullanabilmesini','Sitenin sadece hızlı bilgisayarda açılmasını','Metni gizlemeyi','Parolaları yayımlamayı'],0],
+['Sahte bir hesabın senden doğrulama kodu istemesi durumunda?',['Kodu paylaşmamak','Kodu herkese göndermek','Parolanı da yollamak','Hesabını herkese açmak'],0],
+['Excel’de bir hücreyi kopyalayıp yapıştırmak için yaygın kısayol nedir?',['Ctrl+C ve Ctrl+V','Alt+F4 ve Esc','Ctrl+P ve F1','Shift+Tab ve F5'],0],
+['Scratch’te yeşil bayrak genellikle ne yapar?',['Projeyi başlatır','Bilgisayarı kapatır','Dosyayı siler','Sesi fiziksel yükseltir'],0],
+['Bir web formunda kullanıcı girdisini doğrulamak neden önemlidir?',['Hatalı veya beklenmeyen verileri yönetmek','Ekranı renklendirmek sadece','Wi-Fi adını değiştirmek','Klavye ışığını açmak'],0],
+['Lisans neyi açıklar?',['Yazılımın nasıl kullanılabileceğine dair koşulları','Bilgisayarın ağırlığını','Monitör boyutunu','İnternet hızını'],0],
+['Geri dönüşüm kutusu ne işe yarar?',['Silinen dosyaları bazı durumlarda geri getirmek','İnternet hızlandırmak','RAM artırmak','Parola oluşturmak'],0],
+['Scratch’te ses bloğu ne yapabilir?',['Ses çalabilir veya kontrol edebilir','Ekran kartını değiştirir','Dosya uzantısını düzenler','İnternet bağlar'],0],
+['Excel’de bir hücreye metin yazmak ne sağlar?',['Veri girişi','İşlemci soğutma','Wi-Fi şifreleme','Ekranı kilitleme'],0],
+['Güvenilir kaynak seçmek için neye bakılır?',['Yazar, tarih, kanıt ve başka kaynaklar','Sadece büyük harflere','Rastgele yorumlara','Sayfanın rengine'],0],
+['İki faktörlü doğrulama kodunu kime vermelisin?',['Kimseye, destek olduğunu söyleyen kişiye bile','Herkese','Sosyal medya takipçilerine','Oyun sohbetine'],0],
+['Bir internet sitesinde çerezler ne için kullanılabilir?',['Tercihleri veya oturum bilgilerini tutmak','Bilgisayarı fiziksel temizlemek','Ekran kartını değiştirmek','Dosyaları otomatik yazdırmak'],0],
+['Programlamada döngünün sonsuz hale gelmesi neye yol açabilir?',['Programın takılmasına veya kaynak tüketmesine','Parolanın uzamasına','Ekranın fiziksel büyümesine','Klavye dilinin değişmesine'],0],
+['Dijital ayak izi nedir?',['Çevrimiçi etkinliklerden kalan izler','Ayakkabı sensörü','Excel grafiği','Bilgisayar kasası'],0],
+['Excel’de çalışma kitabı nedir?',['Bir veya daha fazla çalışma sayfası içeren dosya','Bir klavye modeli','Bir web tarayıcısı','Bir ekran kartı'],0]
+];
+var usedQuestions=[];
+function log(s){var el=document.getElementById('log');el.innerHTML='['+new Date().toLocaleTimeString('tr-TR')+'] '+s+'<br>'+el.innerHTML;el.innerHTML=el.innerHTML.split('<br>').slice(0,12).join('<br>')}
+function rand(a,b){return Math.random()*(b-a)+a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function resetWorld(){kills=0;level=1;damage=0;speedBonus=0;weapon=0;potions=2;usedQuestions=[];blocks=[];bots=[];particles=[];player={x:W/2,y:H/2,r:13,hp:100,maxHp:100,angle:0,cool:0,invuln:0};for(var i=0;i<45;i++){var x=rand(35,W-35),y=rand(35,H-35);if(Math.hypot(x-player.x,y-player.y)>100)blocks.push({x:x,y:y,w:rand(24,50),h:rand(20,42),type:Math.random()<.55?'#3a5739':'#594d35'})}for(var j=0;j<7;j++)spawnBot();updateHud();log('Yeni dünya üretildi.')}
+function spawnBot(){var a=rand(0,Math.PI*2),d=rand(180,350);bots.push({x:clamp(player.x+Math.cos(a)*d,25,W-25),y:clamp(player.y+Math.sin(a)*d,25,H-25),r:12,hp:55+level*4,maxHp:55+level*4,speed:rand(45,65),cool:rand(.1,1),flash:0,name:['Alex','Noob','Miner','Creeper?','Builder'][Math.floor(rand(0,5))]})}
+function updateHud(){document.getElementById('hpText').textContent=Math.max(0,Math.ceil(player.hp))+' / '+player.maxHp;document.getElementById('hpBar').style.width=clamp(player.hp/player.maxHp*100,0,100)+'%';document.getElementById('kills').textContent=kills;document.getElementById('level').textContent=level;document.getElementById('weapon').textContent=weaponNames[weapon];document.getElementById('potions').textContent=potions;document.getElementById('upgrades').innerHTML='<span class="pill">Hasar +'+damage+'</span><span class="pill">Hız +'+speedBonus+'</span><span class="pill">Zırh '+Math.max(0,level-1)+'</span>'}
+function hitBot(b,amount){b.hp-=amount;b.flash=.12;for(var i=0;i<5;i++)particles.push({x:b.x,y:b.y,vx:rand(-70,70),vy:rand(-70,70),life:.3,color:'#f4c86b'});if(b.hp<=0){bots.splice(bots.indexOf(b),1);kills++;log(b.name+' yenildi! Skor: '+kills);spawnBot();if(kills%1===0)openQuiz();updateHud()}}
+function attack(){if(!running||paused||quizOpen||Date.now()-lastShot<Math.max(180,420-level*20))return;lastShot=Date.now();var target=null,dist=78+weapon*9;for(var i=0;i<bots.length;i++){var b=bots[i],d=Math.hypot(b.x-player.x,b.y-player.y),a=Math.atan2(b.y-player.y,b.x-player.x),dif=Math.abs(Math.atan2(Math.sin(a-player.angle),Math.cos(a-player.angle)));if(d<dist&&dif<.75&&(!target||d<target.d))target={b:b,d:d}}if(target){hitBot(target.b,18+weapon*5+damage*3+(keys.space?12:0));log('Vuruş! '+target.d.toFixed(0)+' blok')}else{particles.push({x:player.x+Math.cos(player.angle)*45,y:player.y+Math.sin(player.angle)*45,vx:0,vy:0,life:.12,color:'#d8e7cb'})}}
+function openQuiz(){quizOpen=true;paused=true;document.getElementById('quizOverlay').classList.remove('hidden');var available=questions.filter(function(q){return usedQuestions.indexOf(q)===-1});if(!available.length){usedQuestions=[];available=questions.slice()}var q=available[Math.floor(Math.random()*available.length)];usedQuestions.push(q);document.getElementById('question').textContent=q[0];document.getElementById('feedback').textContent='Doğru cevap bir geliştirme kazandırır.';var el=document.getElementById('answers');el.innerHTML='';var options=q[1].map(function(v,i){return {v:v,correct:i===q[2]}});options.sort(function(){return Math.random()-.5});options.forEach(function(o){var b=document.createElement('button');b.textContent=o.v;b.onclick=function(){if(o.correct){var upgrade=Math.floor(rand(0,4));if(upgrade===0){damage++;document.getElementById('feedback').textContent='Doğru! Hasar arttı.'}else if(upgrade===1){speedBonus++;document.getElementById('feedback').textContent='Doğru! Hız arttı.'}else if(upgrade===2){player.maxHp+=10;player.hp=Math.min(player.maxHp,player.hp+25);document.getElementById('feedback').textContent='Doğru! Can kapasitesi arttı.'}else{weapon=Math.min(4,weapon+1);document.getElementById('feedback').textContent='Doğru! Silah yükseltildi.'}level++;updateHud();setTimeout(closeQuiz,650)}else{document.getElementById('feedback').textContent='Yanlış cevap! Doğru cevap: '+q[1][q[2]];setTimeout(closeQuiz,1000)}};el.appendChild(b)})}
+function closeQuiz(){quizOpen=false;paused=false;document.getElementById('quizOverlay').classList.add('hidden');document.getElementById('status').textContent='Savaşa devam!'}
+function update(dt){if(!running||paused)return;var dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0),len=Math.hypot(dx,dy)||1;var sp=170+speedBonus*9;player.x=clamp(player.x+dx/len*sp*dt,15,W-15);player.y=clamp(player.y+dy/len*sp*dt,15,H-15);player.angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);player.invuln=Math.max(0,player.invuln-dt);
+for(var i=0;i<bots.length;i++){var b=bots[i],d=Math.hypot(player.x-b.x,player.y-b.y)||1;b.cool-=dt;b.flash=Math.max(0,b.flash-dt);if(d>28){b.x=clamp(b.x+(player.x-b.x)/d*b.speed*dt,12,W-12);b.y=clamp(b.y+(player.y-b.y)/d*b.speed*dt,12,H-12)}else if(b.cool<=0){b.cool=1.1;if(player.invuln<=0){player.hp-=8;player.invuln=.4;log(b.name+' sana vurdu.');if(player.hp<=0){player.hp=0;running=false;document.getElementById('overlay').classList.remove('hidden');document.querySelector('#overlay h2').textContent='OYUN BİTTİ';document.querySelector('#overlay p').textContent='Skorun: '+kills+' | Seviye: '+level;document.getElementById('start').textContent='TEKRAR OYNA';}updateHud()}}}
+for(var p=particles.length-1;p>=0;p--){var pt=particles[p];pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.life-=dt;if(pt.life<=0)particles.splice(p,1)}
+if(isHost&&conn&&conn.open){conn.send({type:'state',player:{x:player.x,y:player.y,hp:player.hp},bots:bots.map(function(b){return {x:b.x,y:b.y,hp:b.hp,maxHp:b.maxHp}})})}
+}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#263a29';ctx.fillRect(0,0,W,H);for(var y=0;y<H;y+=32){for(var x=0;x<W;x+=32){ctx.fillStyle=((x/32+y/32)%2===0)?'#263a29':'#293d2c';ctx.fillRect(x,y,31,31);ctx.fillStyle='#38503a';ctx.font='13px monospace';ctx.fillText(Math.random()<-.1?'#':'.',x+8,y+19)}}blocks.forEach(function(b){ctx.fillStyle=b.type;ctx.fillRect(b.x,b.y,b.w,b.h);ctx.strokeStyle='#75825b';ctx.strokeRect(b.x,b.y,b.w,b.h);ctx.fillStyle='#b5c29a';ctx.font='11px monospace';ctx.fillText(b.type==='#3a5739'?'▓':'▒',b.x+5,b.y+15)});
+bots.forEach(function(b){ctx.save();ctx.translate(b.x,b.y);ctx.fillStyle=b.flash?'#fff':'#d56d62';ctx.fillRect(-10,-10,20,20);ctx.fillStyle='#292d26';ctx.fillRect(-6,-4,4,4);ctx.fillRect(3,-4,4,4);ctx.fillStyle='#101510';ctx.fillRect(-13,-19,26,4);ctx.fillStyle='#ff7777';ctx.fillRect(-13,-19,26*clamp(b.hp/b.maxHp,0,1),4);ctx.restore();ctx.fillStyle='#dbe7d6';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText(b.name,b.x,b.y-23)});
+particles.forEach(function(p){ctx.globalAlpha=clamp(p.life/.3,0,1);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,4,4)});ctx.globalAlpha=1;
+ctx.save();ctx.translate(player.x,player.y);ctx.rotate(player.angle);ctx.fillStyle=player.invuln?'#fff':'#75b9ed';ctx.fillRect(-11,-11,22,22);ctx.fillStyle='#273c55';ctx.fillRect(-5,-6,4,4);ctx.fillRect(3,-6,4,4);ctx.fillStyle='#b8d7f1';ctx.fillRect(3,-3,23,5);ctx.restore();ctx.strokeStyle='#f5d76e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mouse.x,mouse.y,7,0,Math.PI*2);ctx.moveTo(mouse.x-11,mouse.y);ctx.lineTo(mouse.x+11,mouse.y);ctx.moveTo(mouse.x,mouse.y-11);ctx.lineTo(mouse.x,mouse.y+11);ctx.stroke();ctx.textAlign='left';ctx.fillStyle='#d8e7cb';ctx.font='13px monospace';ctx.fillText('ARENA 01  |  '+bots.length+' BOT',14,22);
+}
+function loop(t){var dt=Math.min(.04,(t-lastTick)/1000||0);lastTick=t;update(dt);draw();requestAnimationFrame(loop)}
+canvas.addEventListener('mousemove',function(e){var r=canvas.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*W;mouse.y=(e.clientY-r.top)/r.height*H});canvas.addEventListener('mousedown',function(e){if(e.button===0){mouse.down=true;attack()}});window.addEventListener('mouseup',function(){mouse.down=false});window.addEventListener('keydown',function(e){keys[e.key.toLowerCase()]=true;if([' ','arrowup','arrowdown','arrowleft','arrowright'].indexOf(e.key.toLowerCase())>=0)e.preventDefault();if(e.key.toLowerCase()==='h')usePotion();if(e.code==='Space')attack();if(e.key==='Escape')paused=!paused});window.addEventListener('keyup',function(e){keys[e.key.toLowerCase()]=false});
+function usePotion(){if(potions>0&&player.hp<player.maxHp){potions--;player.hp=Math.min(player.maxHp,player.hp+35);updateHud();log('İksir kullanıldı: +35 HP')}}
+document.getElementById('start').onclick=function(){if(player.hp<=0)resetWorld();running=true;paused=false;document.getElementById('overlay').classList.add('hidden');document.getElementById('status').textContent='Savaş başladı';canvas.focus()};
+document.getElementById('reset').onclick=document.getElementById('newWorld').onclick=function(){resetWorld();running=true;paused=false;document.getElementById('overlay').classList.add('hidden');document.getElementById('status').textContent='Yeni dünya'};
+document.getElementById('pause').onclick=function(){paused=!paused;document.getElementById('status').textContent=paused?'Duraklatıldı':'Savaşa devam'};
+document.getElementById('heal').onclick=usePotion;
+function loadPeer(){if(window.Peer)return Promise.resolve();return new Promise(function(resolve,reject){var s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
+document.getElementById('host').onclick=async function(){var el=document.getElementById('netStatus');el.textContent='PeerJS yükleniyor...';try{await loadPeer();peer=new Peer();peer.on('open',function(id){isHost=true;el.textContent='Oda kodun: '+id;document.getElementById('roomCode').value=id;log('Multiplayer oda açıldı: '+id)});peer.on('connection',function(c){conn=c;wireConnection(c, true);el.textContent='Arkadaş bağlandı: '+c.peer});peer.on('error',function(e){el.textContent='Bağlantı hatası: '+e.type})}catch(e){el.textContent='PeerJS yüklenemedi. İnterneti kontrol et.'}};
+document.getElementById('join').onclick=async function(){var code=document.getElementById('roomCode').value.trim(),el=document.getElementById('netStatus');if(!code){el.textContent='Önce oda kodu gir.';return}el.textContent='Bağlanıyor...';try{await loadPeer();peer=new Peer();peer.on('open',function(){conn=peer.connect(code);wireConnection(conn,false);conn.on('open',function(){el.textContent='Bağlandı! (beta)';log('Odaya bağlanıldı.')})});peer.on('error',function(e){el.textContent='Bağlantı hatası: '+e.type})}catch(e){el.textContent='PeerJS yüklenemedi.'}};
+function wireConnection(c,host){c.on('data',function(data){if(data.type==='state'&&!host){remoteState=data;}});c.on('open',function(){if(host)document.getElementById('netStatus').textContent='Oyuncu bağlandı: '+c.peer});c.on('close',function(){document.getElementById('netStatus').textContent='Bağlantı kapandı'});}
+resetWorld();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
